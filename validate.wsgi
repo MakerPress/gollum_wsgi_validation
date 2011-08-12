@@ -3,10 +3,13 @@ from subprocess import call
 import subprocess 
 import os
 import linecache
-
+import redis
 
 log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
+
+r = redis.Redis(host="localhost", port=6379, db=0)
+log_key = "1000"
 
 #
 # Define a generic exception
@@ -127,8 +130,11 @@ def main():
 #
 def application(environ, start_response):
 
-   global log 
+   global log
+   global log_key
+
    log = ["Starting validation process"]
+   log_key = 1000
 
    try:
       main()
