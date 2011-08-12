@@ -4,12 +4,13 @@ import subprocess
 import os
 import linecache
 import redis
+from cgi import parse_qs, escape
 
 log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
 
-r = redis.Redis(host="localhost", port=6379, db=0)
-log_key = "1000"
+status_log = redis.Redis(host="localhost", port=6379, db=0)
+log_key = "key:1000"
 
 #
 # Define a generic exception
@@ -58,6 +59,8 @@ def main():
    #
    # Clone file into working repo
    # 
+
+   status_log.rpush(log_key, "Starting conversion")
    try: 
       rc = call(["git", "clone", "--no-hardlinks", GIT_DIR, tmp_repo])
    except Exception, e:
@@ -76,6 +79,7 @@ def main():
    #
    # Converting to asciidoc 
    # 
+   status_log.rpush(log_key,"Converting AsciiDoc to DocBook")
    write_log("Converting %s from AsciiDoc into DocBook" % project_root)
    try: 
       proc = subprocess.Popen("asciidoc -b docbook %s" % project_root,
@@ -100,6 +104,7 @@ def main():
    # different in that it must read from STDERR with the communicate() method 
    # 
 
+   status_log.rpush(log_key,"Validating DocBook")
    write_log("Running xmllint to validate docbook")
    try: 
       proc = subprocess.Popen("xmllint --valid --noout %s/book.xml 2>&1" % tmp_repo,
@@ -116,14 +121,16 @@ def main():
    #
    # Clone file into working repo
    # 
+   status_log.rpush(log_key,"Cleaning up files")
    write_log("Cleaning up files")
    try: 
       pass
-#      rc = call(["rm", "-rf", tmp_repo])
+      rc = call(["rm", "-rf", tmp_repo])
    except Exception, e:
       write_log("... Unable to delete files")
       raise ValidationError("Error deleteing")
    
+   status_log.rpush(log_key,"Conversion complete")
   
 #
 # Main mod_wsgi interface
@@ -133,13 +140,20 @@ def application(environ, start_response):
    global log
    global log_key
 
+   # Get the Redis log key from the command line
+   qs = parse_qs(environ['QUERY_STRING'])
+   log_key = qs.get('log_key', ["log1000"])[0]
+   log_key = escape(log_key)
+
    log = ["Starting validation process"]
-   log_key = 1000
+   log = ["Log key is %s" % log_key]
+   status_log.expire(log_key,3600)
 
    try:
       main()
    except:
       write_log("Some error occurred!")
+      
 
    status = '200 OK'
    output = "<p>".join(log)
