@@ -8,6 +8,9 @@ from cgi import parse_qs, escape
 
 log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
+log_dir = "/home/git/public/log/%s"
+log_html_dir = "http://localhost:8080/log/%s"
+tmp_repo = ""
 
 status_log = redis.Redis(host="localhost", port=6379, db=0)
 log_key = "key:1000"
@@ -52,7 +55,7 @@ def process_results(err, src):
 # Main procedure where all the action happens
 #
 def main():
-
+   global tmp_repo
    tmp_repo = tempfile.mkdtemp(dir="/home/git/tmp")
    project_root = tmp_repo + "/book.asc"
 
@@ -131,6 +134,11 @@ def main():
       raise ValidationError("Error deleteing")
    
    status_log.rpush(log_key,"Conversion complete")
+
+
+   # Save log to a file
+   fn = tmp_repo.split("/")[-1]
+   status_log.rpush(log_key, "Log file at %s" % (log_html_dir % fn)) 
   
 #
 # Main mod_wsgi interface
@@ -153,10 +161,11 @@ def application(environ, start_response):
       main()
    except:
       write_log("Some error occurred!")
-      
 
    status = '200 OK'
    output = "<p>".join(log)
+
+
 
    response_headers = [('Content-type', 'text/html'),
                         ('Content-Length', str(len(output)))]
