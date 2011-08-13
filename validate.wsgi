@@ -8,8 +8,8 @@ from cgi import parse_qs, escape
 
 log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
-log_dir = "/home/git/public/log/%s"
-log_html_dir = "http://localhost:8080/log/%s"
+log_dir = "/home/git/public/log/%s.html"
+log_html_dir = "/log/%s.html"
 tmp_repo = ""
 
 status_log = redis.Redis(host="localhost", port=6379, db=0)
@@ -138,8 +138,11 @@ def main():
 
    # Save log to a file
    fn = tmp_repo.split("/")[-1]
-   status_log.rpush(log_key, "Log file at %s" % (log_html_dir % fn)) 
-  
+   status_log.rpush(log_key, "Log file : %s" % (log_html_dir % fn)) 
+   write_log("<a href='%s'>Log file</a>" % (log_html_dir % fn)) 
+   f = open(log_dir % fn, "w")
+   f.write("<p>".join(log))
+   f.close()  
 #
 # Main mod_wsgi interface
 #
@@ -164,7 +167,6 @@ def application(environ, start_response):
 
    status = '200 OK'
    output = "<p>".join(log)
-
 
 
    response_headers = [('Content-type', 'text/html'),
