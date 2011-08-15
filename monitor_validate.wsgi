@@ -13,10 +13,24 @@ def application(environ, start_response):
     log_key = escape(log_key)
 
     # Pull out the status log and put into a list
-    out = []
+
+    log_url = ""
+    epub_url = ""
+    process_status = ""
+    log= []
+
+    process_status = status_log.get(log_key + "-status")
+    log_url = status_log.get(log_key + "-log")
+    epub_url = status_log.get(log_key + "-epub")
     for m in status_log.lrange(log_key,0,99):
-       out.append(m)
-    
+       log.append(m)
+   
+    out = { 
+       'log' : log,
+       'log-url': log_url,
+       'epub-url': epub_url,
+       'status' : process_status
+    } 
     # Serialize log as JSON
     output = json.dumps(out) 
 

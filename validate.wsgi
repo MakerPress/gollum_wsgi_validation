@@ -10,6 +10,9 @@ log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
 log_dir = "/home/git/public/log/%s.html"
 log_html_dir = "/log/%s.html"
+log_url = ""
+epub_url = ""
+process_status = ""
 tmp_repo = ""
 
 status_log = redis.Redis(host="localhost", port=6379, db=0)
@@ -66,17 +69,15 @@ def main():
    status_log.rpush(log_key, "Starting conversion")
    try: 
       rc = call(["git", "clone", "--no-hardlinks", GIT_DIR, tmp_repo])
-   except Exception, e:
+   except Exception as e:
       write_log("<b>Unable to unpack file %s<b>" % tmp_repo)
-      raise ValidationError("Error unpacking file")
-   
+      raise ValidationError(str(e))
 
    #
    # Test if book.asc exists 
    # 
    if not os.path.exists(project_root):
-      write_log("<b>Unable to find book.asc</b>")
-      raise ValidationError("Error deleting")
+      raise ValidationError("Unable to find book.asc")
 
    
    #
@@ -92,15 +93,14 @@ def main():
       stdout_value, stderr_value = proc.communicate()
       # Now print the results
       write_log("<hr><h1>Asciidoc Error Log</h1>")
-      lines = stdout_value.split("\n")[1:]
-      write_log("%s lines" % str(len(lines)))
+      lines = stdout_value.split("\n")
       write_log("<ul>")
       for line in lines: 
           write_log("<li>" + line + "</li>")
       write_log("</ul>")
-   except Exception, e:
+   except Exception as e:
       write_log("... Could not convert book to asciidoc")
-      raise ValidationError("Error converting asciidoc to docbook")
+      raise ValidationError(str(e))
 
    #
    # Running XMLLINT, which send output to STDERR.  So, this part is a bit 
@@ -117,9 +117,11 @@ def main():
       stdout_value, stderr_value = proc.communicate()
       write_log("<hr><h1>DocBook Error Log</h1>")
       process_results(stdout_value, tmp_repo+"/book.xml")
-   except Exception, e:
+      if len(stdout_value.split("\n")) > 1:
+         raise ValidationError("DocBook file contains errors")
+   except Exception as e:
       write_log("... Error running xmllint")
-      raise ValidationError("Error validating")
+      raise ValidationError(str(e))
 
 
    #
@@ -150,11 +152,12 @@ def main():
       # Now copy the epub over to the public EPUB directory where people can get the link
       fn = tmp_repo.split("/")[-1]
       rc = call (['mv', "%s/book.epub" % tmp_repo, "/home/git/public/epub/%s.epub" % fn])
-      write_log("<a href='%s'>Download EPUB</a>" % ("/epub/%s.epub" % fn)) 
-      status_log.rpush(log_key, "Epub File is %s" % ("/epub/%s.epub" % fn))
-   except Exception, e:
+      epub_url = "/epub/%s.epub" % fn
+      status_log.set(log_key + "-epub",epub_url)
+      write_log("<a href='%s'>Download EPUB</a>" % epub_url ) 
+   except Exception as e:
       write_log("... Unable to delete files")
-      raise ValidationError("Unable to delete files")
+      raise ValidationError(str(e))
 
 
    #
@@ -165,20 +168,13 @@ def main():
    try: 
       pass
       rc = call(["rm", "-rf", tmp_repo])
-   except Exception, e:
+   except Exception as e:
       write_log("... Unable to delete files")
-      raise ValidationError("Error deleteing")
+      raise ValidationError(str(e))
    
    status_log.rpush(log_key,"Conversion complete")
+   status_log.set(log_key + "-status", "COMPLETE")
 
-
-   # Save log to a file
-   fn = tmp_repo.split("/")[-1]
-   status_log.rpush(log_key, "Log file : %s" % (log_html_dir % fn)) 
-   write_log("<a href='%s'>Log file</a>" % (log_html_dir % fn)) 
-   f = open(log_dir % fn, "w")
-   f.write("<p>".join(log))
-   f.close()  
 #
 # Main mod_wsgi interface
 #
@@ -186,6 +182,9 @@ def application(environ, start_response):
 
    global log
    global log_key
+   global log_url
+   global epub_url
+   global process_status
 
    # Get the Redis log key from the command line
    qs = parse_qs(environ['QUERY_STRING'])
@@ -193,13 +192,33 @@ def application(environ, start_response):
    log_key = escape(log_key)
 
    log = ["Starting validation process"]
-   log = ["Log key is %s" % log_key]
+   log_url = ""
+   epub_url = ""
+   process_status = "RUNNING"
+
    status_log.expire(log_key,3600)
+   status_log.expire(log_key + "-epub",3600)
+   status_log.expire(log_key + "-key",3600)
+   status_log.expire(log_key + "-status",3600)
+
+   status_log.set(log_key + "-epub", epub_url) 
+   status_log.set(log_key + "-log", log_url)
+   status_log.set(log_key + "-status",  process_status)
 
    try:
       main()
-   except:
-      write_log("Some error occurred!")
+   except Exception as e:
+      status_log.set(log_key + "-status", "ERROR") 
+      write_log(str(e))
+
+   # Save log to a file
+   fn = tmp_repo.split("/")[-1]
+   status_log.set(log_key + "-log", "/log/%s.html" % fn)
+   status_log.set(log_key + "-epub", "/epub/%s.epub" % fn)
+   write_log("<a href='%s'>Log file</a>" % "/log/%s.html" % fn ) 
+   f = open(log_dir % fn, "w")
+   f.write("<p>".join(log))
+   f.close()  
 
    status = '200 OK'
    output = "<p>".join(log)
