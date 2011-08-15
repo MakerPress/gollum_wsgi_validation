@@ -118,8 +118,44 @@ def main():
       write_log("<hr><h1>DocBook Error Log</h1>")
       process_results(stdout_value, tmp_repo+"/book.xml")
    except Exception, e:
-      write_log("... Could run xmllint")
+      write_log("... Error running xmllint")
       raise ValidationError("Error validating")
+
+
+   #
+   # Generate EPUB from the DocBook XML
+   #
+   status_log.rpush(log_key,"Generating epub")
+   write_log("Generating epub")
+   dbtoepub = [
+      "cd %s;" % tmp_repo,
+      "/home/git/epub/docbook-xsl/epub/bin/dbtoepub",
+      "-v",
+      "-c", 
+      "/home/git/epub/epub/core.css", 
+      "-s", 
+      "/home/git/epub/epub/core.xsl", 
+      "-f", 
+      "/home/git/epub/epub/fonts/LiberationSerif.otf", 
+      "%s/book.xml" % tmp_repo
+   ]
+   try:
+      proc = subprocess.Popen(" ".join(dbtoepub),
+         shell=True,
+         stderr=subprocess.STDOUT,
+         stdout = subprocess.PIPE)
+      stdout_value, stderr_value = proc.communicate()
+      write_log("<hr><h1>EPUB Conversion</h1>")
+      write_log(repr(stdout_value))
+      # Now copy the epub over to the public EPUB directory where people can get the link
+      fn = tmp_repo.split("/")[-1]
+      rc = call (['mv', "%s/book.epub" % tmp_repo, "/home/git/public/epub/%s.epub" % fn])
+      write_log("<a href='%s'>Download EPUB</a>" % ("/epub/%s.epub" % fn)) 
+      status_log.rpush(log_key, "Epub File is %s" % ("/epub/%s.epub" % fn))
+   except Exception, e:
+      write_log("... Unable to delete files")
+      raise ValidationError("Unable to delete files")
+
 
    #
    # Clone file into working repo
