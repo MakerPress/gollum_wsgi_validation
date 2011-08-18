@@ -150,7 +150,8 @@ def main():
       write_log("<hr><h1>EPUB Conversion</h1>")
       write_log(repr(stdout_value))
       # Now copy the epub over to the public EPUB directory where people can get the link
-      fn = tmp_repo.split("/")[-1]
+#      fn = tmp_repo.split("/")[-1]
+      fn = "book"
       rc = call (['mv', "%s/book.epub" % tmp_repo, "/home/git/public/epub/%s.epub" % fn])
       epub_url = "/epub/%s.epub" % fn
       status_log.set(log_key + "-epub",epub_url)
@@ -212,7 +213,8 @@ def application(environ, start_response):
       write_log(str(e))
 
    # Save log to a file
-   fn = tmp_repo.split("/")[-1]
+#   fn = tmp_repo.split("/")[-1]
+   fn = "log"
    status_log.set(log_key + "-log", "/log/%s.html" % fn)
    status_log.set(log_key + "-epub", "/epub/%s.epub" % fn)
    write_log("<a href='%s'>Log file</a>" % "/log/%s.html" % fn ) 
