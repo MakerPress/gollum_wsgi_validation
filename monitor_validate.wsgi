@@ -9,7 +9,7 @@ def application(environ, start_response):
     
     # Get the Redis log key from the command line
     qs = parse_qs(environ['QUERY_STRING'])
-    log_key = qs.get('log_key', ["key1000"])[0]
+    log_key = qs.get('key_log', ["key1000"])[0]
     log_key = escape(log_key)
 
     # Pull out the status log and put into a list
