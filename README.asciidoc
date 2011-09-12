@@ -1,0 +1,104 @@
+== Set up mod_wsgi
+
+This doc describes how to set up mod_wsgi on Ubuntu 10.10.  This allows you to run python programs via a web browser, which I'll use to run the validation checks.
+
+=== Install python-dev
+
+This is a precondition to installing mod_wsgi, so the first ting to do is run:
+
+apt-get -y install python-dev
+
+=== Install the software
+
+This is pretty much all described at http://mediacore.com/blog/mod_wsgi-with-apache-2-on-centos-4/.  But, here it is, with any modifications I needed to make to get it working.
+
+----
+$ cd ~/my_setup_dir
+$ wget http://modwsgi.googlecode.com/files/mod_wsgi-2.3.tar.gz
+$ tar -xvzf mod_wsgi-2.3.tar.gz
+$ cd mod_wsgi-2.3
+$ ./configure
+----
+
+This will set up all the stuff for the makefiles.  Now, run make to install the package:
+
+----
+$ make install
+----
+
+
+This will put the module file mod_wsgi.so into /usr/lib/apache2/modules
+
+=== Configure Apache
+
+First, change into the mods_available directory:
+
+----
+cd /etc/apache2/mods-available
+----
+
+Then, we need to create two files: mod_wsgi.load and mod_wsgi.conf.  You can do this with vi or whatever.  Here's what goes in them:
+
+====  Create /etc/apache2/mods-available/mod_wsgi.load
+
+Here are the contents of mod_wsgi.load:
+
+----
+LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so
+----
+
+==== Create /etc/apache2/mods-available/mod_wsgi.conf
+
+Here are the contents of mod_wsgi.conf; the "WSGIScriptAlias" line needs to point to the directory where you will put the WSGI files (in this case, /home/git/wsgi/):
+
+----
+AddHandler wsgi-script .wsgi
+WSGIScriptAlias /wsgi-bin/ /home/git/wsgi/
+----
+
+Finally, once this is done, create symlinks to make sure they're activated by creating the following symlinks:
+
+----
+cd /etc/apache2/mods-enabled
+ln -s ../mods-available/mod_wsgi.load
+ln -s ../mods-available/mod_wsgi.conf
+----
+
+Finally, restart Apache:
+
+----
+/etc/init.d/apache2 restart
+----
+
+=== Test the configuration
+
+Finally, we're ready to actually create a test application.  First, create a file called "test.wsgi" in the WSGIScriptAlias directory.  It should have these contents:
+
+----
+def application(environ, start_response):
+    status = '200 OK'
+    output = 'Hello world!'
+
+    response_headers = [('Content-type', 'text/plain'),
+                        ('Content-Length', str(len(output)))]
+    start_response(status, response_headers)
+
+    return [output]
+----
+
+Then, make sure that the Apache user has permissions to execute the script, which you can ensure by doing this:
+
+----
+chown www-data:www-data test.wsgi
+chmod 775 test.wsgi
+----
+
+Finally, try it out in your browser using a URL like this:
+
+----
+http://dev.makerpress.com/wsgi-bin/test.wsgi
+----
+
+Note that the patj in the URL should match the alias name specified in the WSGIScriptAlias, which in our examepl.e is "/wsgi/".
+
+ 
