@@ -186,11 +186,16 @@ def application(environ, start_response):
    global log_url
    global epub_url
    global process_status
+   global root
 
    # Get the Redis log key from the command line
    qs = parse_qs(environ['QUERY_STRING'])
    log_key = qs.get('log_key', ["log1000"])[0]
    log_key = escape(log_key)
+
+   # Get the root index file
+   root = qs.get('root', ["book.asc"])[0]
+   root = escape(root)
 
    log = ["Starting validation process"]
    log_url = ""
@@ -205,6 +210,9 @@ def application(environ, start_response):
    status_log.set(log_key + "-epub", epub_url) 
    status_log.set(log_key + "-log", log_url)
    status_log.set(log_key + "-status",  process_status)
+
+   status_log.rpush(log_key,"Root document is %s" % root)
+   write_log("Root document is %s" % root)
 
    try:
       main()

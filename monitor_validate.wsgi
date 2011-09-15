@@ -7,10 +7,17 @@ status_log = redis.Redis(host="localhost", port=6379, db=0)
 def application(environ, start_response):
     status = '200 OK'
     
-    # Get the Redis log key from the command line
+
     qs = parse_qs(environ['QUERY_STRING'])
-    log_key = qs.get('key_log', ["key1000"])[0]
+
+    # Get the Redis log key from the command line
+    log_key = qs.get('log_key', ["key1000"])[0]
     log_key = escape(log_key)
+
+    # Get the name of the index file
+    root = qs.get('root', ["book.asc"])[0]
+    root = escape(root)
+
 
     # Pull out the status log and put into a list
 
