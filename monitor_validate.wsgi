@@ -34,8 +34,8 @@ def application(environ, start_response):
    
     out = { 
        'log' : log,
-       'log-url': log_url,
-       'epub-url': epub_url,
+       'log_url': log_url,
+       'epub_url': epub_url,
        'status' : process_status
     } 
     # Serialize log as JSON

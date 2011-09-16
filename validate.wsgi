@@ -224,7 +224,7 @@ def application(environ, start_response):
 #   fn = tmp_repo.split("/")[-1]
    fn = "log"
    status_log.set(log_key + "-log", "/log/%s.html" % fn)
-   status_log.set(log_key + "-epub", "/epub/%s.epub" % fn)
+   status_log.set(log_key + "-epub", "/epub/book.epub" % fn)
    write_log("<a href='%s'>Log file</a>" % "/log/%s.html" % fn ) 
    f = open(log_dir % fn, "w")
    f.write("<p>".join(log))
