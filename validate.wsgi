@@ -187,7 +187,7 @@ def main():
    write_log("Cleaning up files")
    try: 
       pass
-#      rc = call(["rm", "-rf", tmp_repo])
+      rc = call(["rm", "-rf", tmp_repo])
    except Exception as e:
       write_log("... Unable to delete files")
       raise ValidationError(str(e))
