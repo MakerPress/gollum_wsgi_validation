@@ -54,18 +54,39 @@ def process_results(err, src):
          write_log("<textarea rows=5 cols=80>" + "".join(out) + "</textarea>")
    if idx == 0:
       write_log("No errors found.")  
+
+#
+# Creates an include file from the index file
+#
+def write_index(doc_path, root):
+   fn_in = "%s/%s.asciidoc" % (doc_path, root)
+   fn_out = "%s/book.asciidoc" % doc_path
+   try:
+      f_out = open(fn_out,'w')
+      f_in = open(fn_in,'r')
+      lines = f_in.readlines()
+      for l in lines:
+         rec = ' '.join(l.split()).split(" ") #Nice little hack to clean up whitespace and EOL
+         if (rec[0] == "*"): 
+            out = "include::%s.asciidoc[]\n" % rec[1]
+            f_out.write(out)
+      f_out.close()
+      f_in.close()
+   except Exception as e:
+      write_log("<b>Unable to create index file %s<b>" % f_out)
+      raise ValidationError(str(e))
+
 #
 # Main procedure where all the action happens
 #
 def main():
    global tmp_repo
    tmp_repo = tempfile.mkdtemp(dir="/home/git/tmp")
-   project_root = tmp_repo + "/book.asc"
+   project_root = tmp_repo + "/book.asciidoc"
 
    #
    # Clone file into working repo
    # 
-
    status_log.rpush(log_key, "Starting conversion")
    try: 
       rc = call(["git", "clone", "--no-hardlinks", GIT_DIR, tmp_repo])
@@ -74,12 +95,10 @@ def main():
       raise ValidationError(str(e))
 
    #
-   # Test if book.asc exists 
+   # Create the "book.asc" file
    # 
-   if not os.path.exists(project_root):
-      raise ValidationError("Unable to find book.asc")
+   write_index(tmp_repo, root)   
 
-   
    #
    # Converting to asciidoc 
    # 
@@ -168,7 +187,7 @@ def main():
    write_log("Cleaning up files")
    try: 
       pass
-      rc = call(["rm", "-rf", tmp_repo])
+#      rc = call(["rm", "-rf", tmp_repo])
    except Exception as e:
       write_log("... Unable to delete files")
       raise ValidationError(str(e))
@@ -224,7 +243,7 @@ def application(environ, start_response):
 #   fn = tmp_repo.split("/")[-1]
    fn = "log"
    status_log.set(log_key + "-log", "/log/%s.html" % fn)
-   status_log.set(log_key + "-epub", "/epub/book.epub" % fn)
+   status_log.set(log_key + "-epub", "/epub/book.epub")
    write_log("<a href='%s'>Log file</a>" % "/log/%s.html" % fn ) 
    f = open(log_dir % fn, "w")
    f.write("<p>".join(log))
