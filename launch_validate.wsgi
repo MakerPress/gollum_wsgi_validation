@@ -5,8 +5,8 @@ import socket
 from cgi import parse_qs, escape
 
 
-URL = "http://%s:8080/wsgi-bin/validate.wsgi?log_key=%s&root=%s"
-PROG_URL = "http://%s:8080/wsgi-bin/monitor_validate.wsgi?log_key=%s"
+URL = "http://%s/wsgi-bin/validate.wsgi?log_key=%s&root=%s"
+PROG_URL = "http://%s/wsgi-bin/monitor_validate.wsgi?log_key=%s"
 
 def application(environ, start_response):
     status = '200 OK'

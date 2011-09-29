@@ -8,7 +8,8 @@ from cgi import parse_qs, escape
 
 log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
-log_dir = "/home/git/public/log/%s.html"
+log_dir = "/home/git/gollum/lib/gollum/frontend/public/log/%s.html"
+epub_dir = "/home/git/gollum/lib/gollum/frontend/public/epub/%s.epub"
 log_html_dir = "/log/%s.html"
 log_url = ""
 epub_url = ""
@@ -171,7 +172,7 @@ def main():
       # Now copy the epub over to the public EPUB directory where people can get the link
 #      fn = tmp_repo.split("/")[-1]
       fn = "book"
-      rc = call (['mv', "%s/book.epub" % tmp_repo, "/home/git/public/epub/%s.epub" % fn])
+      rc = call (['mv', "%s/book.epub" % tmp_repo, epub_dir % fn])
       epub_url = "/epub/%s.epub" % fn
       status_log.set(log_key + "-epub",epub_url)
       write_log("<a href='%s'>Download EPUB</a>" % epub_url ) 
