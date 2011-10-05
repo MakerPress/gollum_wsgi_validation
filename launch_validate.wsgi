@@ -5,8 +5,8 @@ import socket
 from cgi import parse_qs, escape
 
 
-URL = "http://%s/wsgi-bin/validate.wsgi?log_key=%s&root=%s"
-PROG_URL = "http://%s/wsgi-bin/monitor_validate.wsgi?log_key=%s"
+URL = "http://%s:8080/wsgi-bin/validate.wsgi?log_key=%s&root=%s"
+PROG_URL = "/wsgi-bin/monitor_validate.wsgi?log_key=%s"
 
 def application(environ, start_response):
     status = '200 OK'
@@ -30,7 +30,7 @@ def application(environ, start_response):
     output = json.dumps({
        'log_key': log_key,
        'root' : root,
-       'callback_url': PROG_URL % (host_ip,log_key)
+       'callback_url': PROG_URL % (log_key)
     }) 
 
     response_headers = [('Content-type', 'text/plain'),
