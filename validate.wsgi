@@ -10,6 +10,7 @@ log = ["Starting validation process"]
 GIT_DIR = "/home/git/git_repo.git"
 log_dir = "/home/git/gollum/lib/gollum/frontend/public/log/%s.html"
 epub_dir = "/home/git/gollum/lib/gollum/frontend/public/epub/%s.epub"
+pdf_dir = "/home/git/gollum/lib/gollum/frontend/public/epub/%s.pdf"
 log_html_dir = "/log/%s.html"
 log_url = ""
 epub_url = ""
@@ -170,7 +171,6 @@ def main():
       write_log("<hr><h1>EPUB Conversion</h1>")
       write_log(repr(stdout_value))
       # Now copy the epub over to the public EPUB directory where people can get the link
-#      fn = tmp_repo.split("/")[-1]
       fn = "book"
       rc = call (['mv', "%s/book.epub" % tmp_repo, epub_dir % fn])
       epub_url = "/epub/%s.epub" % fn
@@ -180,9 +180,38 @@ def main():
       write_log("... Unable to delete files")
       raise ValidationError(str(e))
 
+   #
+   # Generate a PDF
+   #
+   status_log.rpush(log_key,"Generating PDF")
+   write_log("Generating PDF")
+   cmd = [
+      "cd %s;" % tmp_repo,
+      "a2x",
+      "-fpdf",
+      project_root
+   ]
+   try:
+      proc = subprocess.Popen(" ".join(cmd),
+         shell=True,
+         stderr=subprocess.STDOUT,
+         stdout = subprocess.PIPE)
+      stdout_value, stderr_value = proc.communicate()
+      write_log("<hr><h1>PDF Conversion</h1>")
+      write_log(repr(stdout_value))
+      # Now copy the epub over to the public EPUB directory where people can get the link
+      fn = "book"
+      rc = call (['mv', "%s/book.pdf" % tmp_repo, pdf_dir % fn])
+      pdf_url = "/epub/%s.pdf" % fn
+      status_log.set(log_key + "-pdf",pdf_url)
+      write_log("<a href='%s'>Download PDF</a>" % pdf_url ) 
+   except Exception as e:
+      write_log("... Unable to create PDF")
+      raise ValidationError(str(e))
+
 
    #
-   # Clone file into working repo
+   # Remove old repo
    # 
    status_log.rpush(log_key,"Cleaning up files")
    write_log("Cleaning up files")

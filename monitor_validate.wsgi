@@ -29,6 +29,7 @@ def application(environ, start_response):
     process_status = status_log.get(log_key + "-status")
     log_url = status_log.get(log_key + "-log")
     epub_url = status_log.get(log_key + "-epub")
+    pdf_url = status_log.get(log_key + "-pdf")
     for m in status_log.lrange(log_key,0,99):
        log.append(m)
    
@@ -36,6 +37,7 @@ def application(environ, start_response):
        'log' : log,
        'log_url': log_url,
        'epub_url': epub_url,
+       'pdf_url': pdf_url,
        'status' : process_status
     } 
     # Serialize log as JSON
