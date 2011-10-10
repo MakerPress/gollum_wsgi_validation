@@ -70,7 +70,7 @@ def write_index(doc_path, root):
       for l in lines:
          rec = ' '.join(l.split()).split(" ") #Nice little hack to clean up whitespace and EOL
          if (rec[0] == "*"): 
-            out = "include::%s.asciidoc[]\n" % rec[1]
+            out = "include::%s.asciidoc[]\n\n" % rec[1]
             f_out.write(out)
       f_out.close()
       f_in.close()
@@ -92,6 +92,9 @@ def main():
    status_log.rpush(log_key, "Starting conversion")
    try: 
       rc = call(["git", "clone", "--no-hardlinks", GIT_DIR, tmp_repo])
+      rc = call(["rm", log_dir % "book"])
+      rc = call(["rm", epub_dir % "book"])
+      rc = call(["rm", pdf_dir % "book"])
    except Exception as e:
       write_log("<b>Unable to unpack file %s<b>" % tmp_repo)
       raise ValidationError(str(e))
